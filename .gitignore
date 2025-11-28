@@ -1,0 +1,43 @@
+# Node.js (frontend)
+frontend/node_modules/
+frontend/.env.local
+frontend/.env.*
+
+# Java / Spring Boot (backend/target/
+backend/target/
+backend/*.log
+backend/*.iml
+backend/.idea/
+backend/*.class
+
+# Archivos con secretos (NUNCA subir)
+.env
+.env.*
+*.env
+.env.local
+.env.development
+.env.production
+
+# Configuraciones locales de Spring Boot (ya usas variables de entorno)
+src/main/resources/application.yml
+src/main/resources/application-*.yml
+src/main/resources/application-*.yaml
+
+# IDEs y editores
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Logs y temporales
+*.log
+logs/
+
+# Build de frontend
+frontend/dist/
+frontend/build/

@@ -1,0 +1,51 @@
+version: '3.8'
+services:
+  smartwomen-crm:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      # Azure OpenAI Configuration
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - AZURE_OPENAI_GPT4_DEPLOYMENT=${AZURE_OPENAI_GPT4_DEPLOYMENT:-gpt-4o}
+      - AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT=${AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT:-text-embedding-ada-002}
+      
+      # Azure Cosmos DB Configuration
+      - AZURE_COSMOS_ENDPOINT=${AZURE_COSMOS_ENDPOINT}
+      - AZURE_COSMOS_KEY=${AZURE_COSMOS_KEY}
+      - AZURE_COSMOS_DATABASE=${AZURE_COSMOS_DATABASE:-SmartWomenCRM}
+      - AZURE_COSMOS_PREFERRED_REGIONS=${AZURE_COSMOS_PREFERRED_REGIONS:-Southeast Asia}
+      
+      # Azure Content Safety Configuration
+      - AZURE_CONTENT_SAFETY_ENDPOINT=${AZURE_CONTENT_SAFETY_ENDPOINT}
+      - AZURE_CONTENT_SAFETY_API_KEY=${AZURE_CONTENT_SAFETY_API_KEY}
+      
+      # Azure Translator Configuration
+      - AZURE_TRANSLATOR_ENDPOINT=${AZURE_TRANSLATOR_ENDPOINT}
+      - AZURE_TRANSLATOR_API_KEY=${AZURE_TRANSLATOR_API_KEY}
+      - AZURE_TRANSLATOR_REGION=${AZURE_TRANSLATOR_REGION}
+      
+      # Azure Cognitive Search Configuration
+      - AZURE_SEARCH_ENDPOINT=${AZURE_SEARCH_ENDPOINT}
+      - AZURE_SEARCH_API_KEY=${AZURE_SEARCH_API_KEY}
+      
+      # Azure Key Vault Configuration
+      - AZURE_KEYVAULT_URI=${AZURE_KEYVAULT_URI}
+      
+      # Application Configuration
+      - MAX_CONCURRENT_REQUESTS=${MAX_CONCURRENT_REQUESTS:-10}
+      - AGENT_REQUEST_TIMEOUT=${AGENT_REQUEST_TIMEOUT:-30s}
+      - PORT=${PORT:-8080}
+    
+    volumes:
+      - ./logs:/app/logs  # Optional: Mount logs directory
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    restart: unless-stopped
