@@ -27,7 +27,7 @@ public class LanguageDetectorAgent {
     @Qualifier("openAIClient")
     private OpenAIClient openAIClient;
     
-    @Value("${spring.azure.cognitive-services.openai.gpt4-deployment:gpt-5-nano}")
+    @Value("${spring.azure.cognitive-services.openai.gpt4-deployment}")
     private String gpt4Deployment;
     
     /**

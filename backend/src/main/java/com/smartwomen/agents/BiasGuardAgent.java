@@ -35,7 +35,7 @@ public class BiasGuardAgent {
     @Qualifier("contentSafetyClient")
     private ContentSafetyClient contentSafetyClient;
     
-    @Value("${spring.azure.cognitive-services.openai.gpt4-deployment:smartwomen-nano}")
+    @Value("${spring.azure.cognitive-services.openai.gpt4-deployment}")
     private String gpt4Deployment;
     
     // Tipos de sesgos a detectar

@@ -29,7 +29,7 @@ public class PlannerAgent {
     @Qualifier("openAIClient")
     private OpenAIClient openAIClient;
     
-    @Value("${spring.azure.cognitive-services.openai.gpt4-deployment:smartwomen-nano}")
+    @Value("${spring.azure.cognitive-services.openai.gpt4-deployment}")
     private String gpt4Deployment;
     
     // Agentes disponibles en el sistema

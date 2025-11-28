@@ -1,43 +1,50 @@
-# Node.js (frontend)
+# ==========================
+# FRONTEND (Node / JS)
+# ==========================
 frontend/node_modules/
-frontend/.env.local
-frontend/.env.*
+frontend/dist/
+frontend/build/
+frontend/.env*
+!frontend/.env.example
 
-# Java / Spring Boot (backend/target/
+# ==========================
+# BACKEND (Spring Boot / Java)
+# ==========================
 backend/target/
 backend/*.log
+backend/*.class
 backend/*.iml
 backend/.idea/
-backend/*.class
+backend/.vscode/
+backend/setup-azure-env.bat
 
-# Archivos con secretos (NUNCA subir)
+# ==========================
+# ENV y secretos (NUNCA subir)
+# ==========================
 .env
 .env.*
 *.env
-.env.local
-.env.development
-.env.production
+!.env.example
 
-# Configuraciones locales de Spring Boot (ya usas variables de entorno)
-src/main/resources/application.yml
-src/main/resources/application-*.yml
-src/main/resources/application-*.yaml
+# ==========================
+# Spring config local (solo si contiene secretos)
+# ==========================
+backend/src/main/resources/application.yml
+backend/src/main/resources/application-*.yml
+backend/src/main/resources/application-*.yaml
 
-# IDEs y editores
+# ==========================
+# IDEs / Sistema
+# ==========================
 .idea/
-*.iml
 .vscode/
 *.swp
 *.swo
-
-# Sistema operativo
 .DS_Store
 Thumbs.db
 
-# Logs y temporales
-*.log
+# ==========================
+# Logs
+# ==========================
 logs/
-
-# Build de frontend
-frontend/dist/
-frontend/build/
+*.log

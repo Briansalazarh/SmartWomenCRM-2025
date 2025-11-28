@@ -75,5 +75,4 @@ public class AzureConfig {
     }
     
     // Removido HttpClient personalizado - Azure SDK usará su cliente por defecto
-    // Esto evita conflictos de dependencias y simplifica la configuración
 }

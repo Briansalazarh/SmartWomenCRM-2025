@@ -31,6 +31,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+        
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -76,16 +77,27 @@
             <artifactId>azure-ai-translation-text</artifactId>
             <version>1.1.7</version>
         </dependency>
-        <!--dependency>
-            <groupId>com.azure</groupId>
-            <artifactId>azure-search-documents</artifactId>
-            <version>11.5.0</version>
-        </dependency-->
+        <!-- Temporarily disabled - causes data_sources parameter issue -->
+
+        <!--
+
+        <dependency>
+
+        <groupId>com.azure</groupId>
+
+        <artifactId>azure-search-documents</artifactId>
+
+        <version>11.5.0</version>
+
+        </dependency>
+
+        -->
         <dependency>
             <groupId>com.azure</groupId>
             <artifactId>azure-identity</artifactId>
             <version>1.18.1</version>
         </dependency>
+        
         <dependency>
             <groupId>com.azure</groupId>
             <artifactId>azure-security-keyvault-secrets</artifactId>
