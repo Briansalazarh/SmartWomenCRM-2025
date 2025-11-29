@@ -38,6 +38,7 @@ public class AgentController {
      * POST /api/v1/agents/language-detect
      */
     @PostMapping("/language-detect")
+    @CrossOrigin(origins = "http://localhost:3000")
     public AgentResponse detectLanguage(@RequestBody Map<String, Object> request) {
         try {
             String content = (String) request.get("content");
@@ -67,6 +68,7 @@ public class AgentController {
      * POST /api/v1/agents/sentiment-analyze
      */
     @PostMapping("/sentiment-analyze")
+    @CrossOrigin(origins = "http://localhost:3000")
     public AgentResponse analyzeSentiment(@RequestBody Map<String, Object> request) {
         try {
             String content = (String) request.get("content");
@@ -93,6 +95,7 @@ public class AgentController {
      * POST /api/v1/agents/bias-detect
      */
     @PostMapping("/bias-detect")
+    @CrossOrigin(origins = "http://localhost:3000")
     public AgentResponse detectBias(@RequestBody Map<String, Object> request) {
         try {
             String content = (String) request.get("content");
@@ -119,6 +122,7 @@ public class AgentController {
      * POST /api/v1/agents/create-plan
      */
     @PostMapping("/create-plan")
+    @CrossOrigin(origins = "http://localhost:3000")
     public AgentResponse createExecutionPlan(@RequestBody Map<String, Object> request) {
         try {
             String content = (String) request.get("content");
@@ -145,6 +149,7 @@ public class AgentController {
      * GET /api/v1/agents/health
      */
     @GetMapping("/health")
+    @CrossOrigin(origins = "http://localhost:3000") 
     public Map<String, Object> healthCheck() {
         Map<String, Object> response = new HashMap<>();
         response.put("status", "healthy");

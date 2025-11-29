@@ -2,24 +2,17 @@ package com.smartwomen.agents;
 
 import com.smartwomen.models.AgentRequest;
 import com.smartwomen.models.AgentResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import com.azure.ai.openai.OpenAIClient;
-import com.azure.ai.openai.models.ChatRequestUserMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.ArrayList;
-import java.util.Arrays;
 
-/**
- * PlannerAgent - Orquestador inteligente de agentes
- * Decide qué agentes ejecutar y en qué orden basado en el contexto y objetivos
- */
+import java.util.*;
+
 @Component
 public class PlannerAgent {
     
@@ -29,184 +22,163 @@ public class PlannerAgent {
     @Qualifier("openAIClient")
     private OpenAIClient openAIClient;
     
-    @Value("${spring.azure.cognitive-services.openai.gpt4-deployment}")
+    @Value("${azure.openai.gpt4-deployment}")
     private String gpt4Deployment;
     
-    // Agentes disponibles en el sistema
-    private static final List<String> AVAILABLE_AGENTS = Arrays.asList(
-        "LanguageDetector", "SentimentAnalyzer", "BiasGuard", 
-        "Personalization", "ResponseGenerator", "Handoff"
-    );
+    private final ObjectMapper objectMapper = new ObjectMapper();
     
     /**
      * Planifica la ejecución de agentes basada en el contexto
      */
     public AgentResponse createExecutionPlan(AgentRequest request) {
+        long startTime = System.currentTimeMillis();
+        
         try {
             String inputText = request.getContent();
             Map<String, Object> context = request.getContext();
-            
-            // Extraer contexto para la planificación
             String contextSummary = extractContextSummary(context);
             
-            String systemPrompt = """
-                Eres el PlannerAgent - el cerebro orquestador de SmartWomen CRM.
-                Tu función es crear un plan inteligente de ejecución de agentes.
-                
-                AGENTES DISPONIBLES:
-                - LanguageDetector: Detecta idioma y dialecto LATAM
-                - SentimentAnalyzer: Analiza sentimientos con contexto de género
-                - BiasGuard: Detecta y bloquea sesgos
-                - Personalization: Personaliza contenido usando RAG
-                - ResponseGenerator: Genera respuestas empáticas
-                - Handoff: Escalación a humanos si es necesario
-                
-                CONTEXTO DEL USUARIO:
-                """ + contextSummary + """
-                
-                CONSIDERACIONES DE PLANIFICACIÓN:
-                1. Siempre ejecutar LanguageDetector PRIMERO (si es mensaje nuevo)
-                2. Ejecutar SentimentAnalyzer en mensajes importantes
-                3. Ejecutar BiasGuard si el contenido es sensible o generado por IA
-                4. Ejecutar Personalization para contenido personalizado
-                5. Ejecutar ResponseGenerator para generar respuestas finales
-                6. Ejecutar Handoff solo si sentiment intensity > 0.9 O bias severity > 0.8
-                
-                CRITERIOS DE EFICIENCIA:
-                - Minimizar llamadas innecesarias
-                - Paralelizar agentes independientes cuando sea posible
-                - Cachear resultados similares
-                
-                Responde SOLO en JSON:
-                {
-                  "executionOrder": ["Agent1", "Agent2", ...],
-                  "parallelAgents": [["Agent1", "Agent2"], ["Agent3"]],
-                  "reasoning": "explicación del plan",
-                  "estimatedTime": "tiempo estimado en ms",
-                  "complexity": "low/medium/high",
-                  "agentsToCache": ["Agent1", "Agent3"],
-                  "conditionalTriggers": {
-                    "ifSentimentHigh": "Handoff",
-                    "ifBiasDetected": "BiasGuard"
-                  }
-                }
-                """;
+            logger.info("🌍 PLAN INPUT: [{}]", inputText);
+            logger.info("📋 CONTEXT: {}", contextSummary);
+            
+            // Prompt especializado para planificación
+            String systemPrompt = buildPlannerPrompt(contextSummary);
             
             var chatRequest = new com.azure.ai.openai.models.ChatCompletionsOptions(
-                List.of(new ChatRequestUserMessage(systemPrompt), 
-                       new ChatRequestUserMessage("Mensaje del usuario: " + inputText))
+                List.of(
+                    new com.azure.ai.openai.models.ChatRequestSystemMessage(systemPrompt),
+                    new com.azure.ai.openai.models.ChatRequestUserMessage("Mensaje: " + inputText)
+                )
             ).setModel(gpt4Deployment);
             
             var response = openAIClient.getChatCompletions(gpt4Deployment, chatRequest);
-            String planJson = response.getChoices().get(0).getMessage().getContent();
+            String aiPlan = response.getChoices().get(0).getMessage().getContent();
+            logger.info("🤖 GPT-4 PLAN: {}", aiPlan);
             
-            Map<String, Object> executionPlan = parsePlanJson(planJson);
+            // Parsear y estructurar resultado
+            Map<String, Object> planResult = parsePlanJson(aiPlan);
             
-            logger.info("Execution plan created - Order: {}, Complexity: {}", 
-                       executionPlan.get("executionOrder"),
-                       executionPlan.get("complexity"));
+            // Metadata limpia
+            Map<String, Object> metadata = buildMetadata(planResult);
             
             return AgentResponse.builder()
                 .agentType("Planner")
-                .content(planJson)
-                .metadata(executionPlan)
+                .content(objectMapper.writeValueAsString(planResult))  // ✅ JSON parseable
+                .metadata(metadata)
                 .success(true)
-                .processingTime(System.currentTimeMillis() - request.getTimestamp())
+                .processingTime(System.currentTimeMillis() - startTime)
+                .confidence(String.valueOf(planResult.get("confidence")))  // ✅ Confidence extraído
                 .build();
                 
         } catch (Exception e) {
-            logger.error("Error creating execution plan", e);
+            logger.error("❌ PLAN CREATION FAILED", e);
+            return buildErrorResponse(e.getMessage(), request.getTimestamp());
+        }
+    }
+    
+    private String buildPlannerPrompt(String contextSummary) {
+        return """
+            Eres el PlannerAgent - el cerebro orquestador de SmartWomen CRM.
+            Tu función es crear un plan inteligente de ejecución de agentes.
             
-            // Plan de emergencia
-            Map<String, Object> fallbackPlan = createFallbackPlan();
-            return AgentResponse.builder()
-                .agentType("Planner")
-                .content("Fallback execution plan")
-                .metadata(fallbackPlan)
-                .success(false)
-                .build();
-        }
-    }
-    
-    /**
-     * Plan de ejecución por defecto en caso de error
-     */
-    private Map<String, Object> createFallbackPlan() {
-        Map<String, Object> fallback = new HashMap<>();
-        fallback.put("executionOrder", Arrays.asList("LanguageDetector", "SentimentAnalyzer", "ResponseGenerator"));
-        fallback.put("parallelAgents", Arrays.asList(Arrays.asList("LanguageDetector", "SentimentAnalyzer")));
-        fallback.put("reasoning", "Default safe execution path");
-        fallback.put("estimatedTime", "1500");
-        fallback.put("complexity", "low");
-        return fallback;
-    }
-    
-    /**
-     * Extrae un resumen del contexto para la planificación
-     */
-    private String extractContextSummary(Map<String, Object> context) {
-        if (context == null || context.isEmpty()) {
-            return "No context available - new conversation";
-        }
-        
-        StringBuilder summary = new StringBuilder();
-        
-        if (context.containsKey("userType")) {
-            summary.append("Usuario: ").append(context.get("userType")).append(". ");
-        }
-        if (context.containsKey("previousAgentResults")) {
-            summary.append("Resultados previos disponibles. ");
-        }
-        if (context.containsKey("conversationLength")) {
-            summary.append("Longitud conversación: ").append(context.get("conversationLength")).append(". ");
-        }
-        if (context.containsKey("requestType")) {
-            summary.append("Tipo solicitud: ").append(context.get("requestType")).append(". ");
-        }
-        
-        return summary.length() > 0 ? summary.toString() : "Context available";
+            AGENTES DISPONIBLES:
+            - LanguageDetector: Detecta idioma y dialecto LATAM
+            - SentimentAnalyzer: Analiza sentimientos con contexto de género
+            - BiasGuard: Detecta y bloquea sesgos
+            - Personalization: Personaliza contenido usando RAG
+            - ResponseGenerator: Genera respuestas empáticas
+            - Handoff: Escalación a humanos si es necesario
+            
+            CONTEXTO DEL USUARIO:
+            """ + contextSummary + """
+            
+            CONSIDERACIONES:
+            1. LanguageDetector primero (si mensaje nuevo)
+            2. Paralelizar agentes independientes
+            3. Cachear resultados similares
+            4. Triggers condicionales (sentiment > 0.9 → Handoff)
+            
+            Responde SOLO en JSON:
+            {
+              "executionOrder": ["Agent1", "Agent2"],
+              "parallelAgents": [["Agent1", "Agent2"]],
+              "reasoning": "explicación",
+              "estimatedTime": 500,
+              "complexity": "low/medium/high",
+              "agentsToCache": ["Agent1"],
+              "conditionalTriggers": {"condition": "agent"},
+              "confidence": 0.85
+            }
+            """;
     }
     
     private Map<String, Object> parsePlanJson(String json) {
-        Map<String, Object> result = new HashMap<>();
         try {
-            String cleaned = json.replaceAll("[{}]", "").trim();
-            String[] pairs = cleaned.split(",");
+            String cleaned = json.replaceAll("```json", "").replaceAll("```", "").trim();
+            Map<String, Object> plan = objectMapper.readValue(cleaned, Map.class);
             
-            for (String pair : pairs) {
-                String[] keyValue = pair.split(":");
-                if (keyValue.length >= 2) {
-                    String key = keyValue[0].replaceAll("\"", "").trim();
-                    String value = keyValue[1].trim();
-                    
-                    if (key.equals("executionOrder") || key.equals("agentsToCache")) {
-                        // Arrays - extraer contenido de brackets
-                        String arrayContent = value.replaceAll("\\[|\\]", "").trim();
-                        List<String> agents = new ArrayList<>();
-                        for (String agent : arrayContent.split("\",\"")) {
-                            agents.add(agent.replaceAll("\"", "").trim());
-                        }
-                        result.put(key, agents);
-                    } else if (key.equals("parallelAgents")) {
-                        // Nested arrays - simplificado
-                        result.put(key, value);
-                    } else if (key.equals("conditionalTriggers")) {
-                        result.put(key, value);
-                    } else {
-                        result.put(key, value.replaceAll("\"", ""));
-                    }
-                }
-            }
+            // Valores por defecto si faltan
+            plan.putIfAbsent("confidence", 0.8);
+            plan.putIfAbsent("estimatedTime", 1000);
+            plan.putIfAbsent("complexity", "medium");
             
-            // Validar que el plan contenga agentes válidos
-            if (!result.containsKey("executionOrder")) {
-                result.put("executionOrder", Arrays.asList("LanguageDetector", "SentimentAnalyzer"));
-            }
-            
+            return plan;
         } catch (Exception e) {
-            logger.warn("Could not parse plan JSON, using fallback");
-            result = createFallbackPlan();
+            logger.warn("❌ Parse error: {}", e.getMessage());
+            return createFallbackPlan();
         }
-        return result;
+    }
+    
+    private Map<String, Object> createFallbackPlan() {
+        Map<String, Object> fallback = new HashMap<>();
+        fallback.put("executionOrder", List.of("LanguageDetector", "SentimentAnalyzer", "ResponseGenerator"));
+        fallback.put("parallelAgents", List.of());
+        fallback.put("reasoning", "Fallback plan due to parse error");
+        fallback.put("estimatedTime", 1500);
+        fallback.put("complexity", "medium");
+        fallback.put("agentsToCache", List.of());
+        fallback.put("conditionalTriggers", Map.of());
+        fallback.put("confidence", 0.5);
+        return fallback;
+    }
+    
+    private Map<String, Object> buildMetadata(Map<String, Object> planResult) {
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("executionOrder", planResult.get("executionOrder"));
+        metadata.put("parallelAgents", planResult.get("parallelAgents"));
+        metadata.put("estimatedTime", planResult.get("estimatedTime"));
+        metadata.put("complexity", planResult.get("complexity"));
+        metadata.put("agentsToCache", planResult.get("agentsToCache"));
+        metadata.put("conditionalTriggers", planResult.get("conditionalTriggers"));
+        return metadata;
+    }
+    
+    private String extractContextSummary(Map<String, Object> context) {
+        if (context == null || context.isEmpty()) {
+            return "No context - new conversation";
+        }
+        
+        StringBuilder summary = new StringBuilder();
+        if (context.containsKey("userType")) {
+            summary.append("User: ").append(context.get("userType")).append(". ");
+        }
+        if (context.containsKey("conversationLength")) {
+            summary.append("Length: ").append(context.get("conversationLength")).append(". ");
+        }
+        if (context.containsKey("requestType")) {
+            summary.append("Type: ").append(context.get("requestType")).append(". ");
+        }
+        return summary.toString();
+    }
+    
+    private AgentResponse buildErrorResponse(String error, long timestamp) {
+        return AgentResponse.builder()
+                .agentType("Planner")
+                .content("Plan creation failed")
+                .error(error)
+                .success(false)
+                .processingTime(System.currentTimeMillis() - timestamp)
+                .confidence("0.0")
+                .build();
     }
 }

@@ -4,62 +4,47 @@ import './index.css';
 function App() {
   const [services, setServices] = useState([
     {
-      name: 'Azure OpenAI',
+      name: 'Language Detector',
       status: 'checking',
-      description: 'Procesamiento de lenguaje natural y generación de respuestas inteligentes',
-      icon: '🤖',
-      endpoint: 'https://brian-mihsyscv-eastus2.cognitiveservices.azure.com'
-    },
-    {
-      name: 'Azure Cosmos DB',
-      status: 'checking',
-      description: 'Base de datos NoSQL para almacenamiento de datos de clientes',
-      icon: '🗃️',
-      endpoint: 'https://smartwomen2025.documents.azure.com:443/'
-    },
-    {
-      name: 'Azure Content Safety',
-      status: 'checking',
-      description: 'Moderación automática de contenido para mantener un ambiente seguro',
-      icon: '🛡️',
-      endpoint: 'https://smartwomen-safety.cognitiveservices.azure.com/'
-    },
-    {
-      name: 'Azure Translator',
-      status: 'checking',
-      description: 'Traducción automática para soporte multiidioma',
+      description: 'Detecta idiomas con enriquecimiento cultural LATAM',
       icon: '🌍',
-      endpoint: 'https://smartwomen-translator.cognitiveservices.azure.com/'
+      endpoint: 'POST /agents/language-detect'
     },
     {
-      name: 'Azure Search',
+      name: 'Sentiment Analyzer',
       status: 'checking',
-      description: 'Búsqueda inteligente y análisis de documentos',
-      icon: '🔍',
-      endpoint: 'https://smartwomen-search.search.windows.net'
-    },
-    {
-      name: 'Azure Text Analytics',
-      status: 'checking',
-      description: 'Análisis de sentimientos y extracción de entidades',
+      description: 'Analiza sentimientos con contexto de género LATAM',
       icon: '📊',
-      endpoint: 'https://smartwomen-text.cognitiveservices.azure.com/'
+      endpoint: 'POST /agents/sentiment-analyze'
+    },
+    {
+      name: 'Bias Guard',
+      status: 'checking',
+      description: 'Detecta sesgos de género, culturales y socioeconómicos',
+      icon: '🛡️',
+      endpoint: 'POST /agents/bias-detect'
+    },
+    {
+      name: 'Planner Agent',
+      status: 'checking',
+      description: 'Orquesta agentes, define orden y paralelismo',
+      icon: '🎯',
+      endpoint: 'POST /agents/create-plan'
     }
   ]);
 
   const [testResults, setTestResults] = useState({});
   const [globalStats, setGlobalStats] = useState({
-    totalServices: 6,
+    totalServices: 4,
     onlineServices: 0,
     totalRequests: 0
   });
 
-  // Simular verificación de servicios
   useEffect(() => {
     const timer = setTimeout(() => {
       const updatedServices = services.map(service => ({
         ...service,
-        status: 'online' // Simular que todos están online
+        status: 'online'
       }));
       setServices(updatedServices);
       setGlobalStats(prev => ({
@@ -79,9 +64,45 @@ function App() {
       [serviceKey]: { loading: true, result: null }
     }));
 
+    const endpointMap = {
+      'language-detector': 'language-detect',
+      'sentiment-analyzer': 'sentiment-analyze',
+      'bias-guard': 'bias-detect',
+      'planner-agent': 'create-plan'
+    };
+
+    const agentEndpoint = endpointMap[serviceKey];
+    
+    if (!agentEndpoint) {
+      setTestResults(prev => ({
+        ...prev,
+        [serviceKey]: {
+          loading: false,
+          result: {
+            success: false,
+            message: '❌ Servicio no configurado',
+            error: 'No existe endpoint para este servicio',
+            timestamp: new Date().toLocaleString()
+          }
+        }
+      }));
+      return;
+    }
+
     try {
-      // Simular llamada a API
-      const response = await fetch('http://localhost:8080/actuator/health');
+      // ✅ URL CORREGIDA: incluye /api/v1
+      const response = await fetch(`http://localhost:8080/api/v1/agents/${agentEndpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content: `Test de ${service.name}` })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+      }
+      
       const data = await response.json();
       
       setTestResults(prev => ({
@@ -90,7 +111,7 @@ function App() {
           loading: false,
           result: {
             success: true,
-            message: 'Servicio conectado correctamente',
+            message: `✅ ${service.name} FUNCIONA`,
             response: data,
             timestamp: new Date().toLocaleString()
           }
@@ -109,7 +130,7 @@ function App() {
           loading: false,
           result: {
             success: false,
-            message: 'Error de conexión con el backend',
+            message: '❌ Error CORS/Conexión',
             error: error.message,
             timestamp: new Date().toLocaleString()
           }
@@ -146,7 +167,6 @@ function App() {
 
   return (
     <div className="app-container">
-      {/* Hero Section */}
       <div className="hero-section">
         <h1 className="hero-title">SmartWomen CRM</h1>
         <p className="hero-subtitle">
@@ -157,7 +177,6 @@ function App() {
         </button>
       </div>
 
-      {/* Stats Bar */}
       <div className="main-content">
         <div className="dashboard-grid" style={{ marginTop: '20px', marginBottom: '20px' }}>
           <div className="card" style={{ textAlign: 'center' }}>
@@ -174,7 +193,6 @@ function App() {
           </div>
         </div>
 
-        {/* Services Dashboard */}
         <h2 style={{ 
           color: 'white', 
           textAlign: 'center', 
@@ -257,7 +275,6 @@ function App() {
           ))}
         </div>
 
-        {/* Footer */}
         <div style={{ 
           textAlign: 'center', 
           marginTop: '60px', 
