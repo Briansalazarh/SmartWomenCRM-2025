@@ -153,6 +153,7 @@ Para soporte técnico o preguntas:
 - **Documentación**: Ver carpetas `docs/` y `backend/README.md`
 
 ---
+LINK OFICIAL: https://youtu.be/w8ObmUukhRc <- DEMO LIVE APLICACION!
 
 **🎉 ¡Construido con ❤️ para empoderar a mujeres emprendedoras en la era digital!**
 
