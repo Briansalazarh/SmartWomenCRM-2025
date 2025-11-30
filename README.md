@@ -2,6 +2,8 @@
 
 **Sistema completo de gestión de clientes diseñado específicamente para mujeres emprendedoras en América Latina, potenciado por los servicios de IA de Microsoft Azure.**
 
+LINK OFICIAL: https://youtu.be/JmpAsR-i1v8 <- DEMO LIVE APLICACION!
+
 ## 🎯 Características Principales
 
 - **🤖 IA Integrada**: Azure OpenAI para procesamiento inteligente de lenguaje
@@ -153,7 +155,7 @@ Para soporte técnico o preguntas:
 - **Documentación**: Ver carpetas `docs/` y `backend/README.md`
 
 ---
-LINK OFICIAL: https://youtu.be/w8ObmUukhRc <- DEMO LIVE APLICACION!
+LINK OFICIAL: https://youtu.be/JmpAsR-i1v8 <- DEMO LIVE APLICACION!
 
 **🎉 ¡Construido con ❤️ para empoderar a mujeres emprendedoras en la era digital!**
 
